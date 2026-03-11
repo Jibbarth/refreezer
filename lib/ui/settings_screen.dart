@@ -347,7 +347,13 @@ class _AppearanceSettingsState extends State<AppearanceSettings> {
             title: Text('Change display mode'.i18n),
             subtitle: Text('Enable high refresh rates'.i18n),
             onTap: () async {
-              List modes = await FlutterDisplayMode.supported;
+              List modes;
+              try {
+                modes = await FlutterDisplayMode.supported;
+              } catch (e) {
+                // flutter_displaymode is not supported on all platforms (e.g. Android TV)
+                return;
+              }
               if (!context.mounted) return;
               showDialog(
                   context: context,

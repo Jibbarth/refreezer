@@ -226,6 +226,9 @@ class _MainScreenState extends State<MainScreen>
           FlutterDisplayMode.setPreferredMode(
               modes[settings.displayMode!.toInt()]);
         }
+      }).catchError((e) {
+        // flutter_displaymode is not supported on all platforms (e.g. Android TV)
+        Logger.root.warning('Failed to set display mode: $e');
       });
     }
 
@@ -277,19 +280,25 @@ class _MainScreenState extends State<MainScreen>
   }
 
   void _prepareQuickActions() {
-    const QuickActions quickActions = QuickActions();
-    quickActions.initialize((type) {
-      _startPreload(type);
-    });
+    try {
+      const QuickActions quickActions = QuickActions();
+      quickActions.initialize((type) {
+        _startPreload(type);
+      });
 
-    //Actions
-    quickActions.setShortcutItems([
-      ShortcutItem(
-          type: 'favorites',
-          localizedTitle: 'Favorites'.i18n,
-          icon: 'ic_favorites'),
-      ShortcutItem(type: 'flow', localizedTitle: 'Flow'.i18n, icon: 'ic_flow'),
-    ]);
+      //Actions
+      quickActions.setShortcutItems([
+        ShortcutItem(
+            type: 'favorites',
+            localizedTitle: 'Favorites'.i18n,
+            icon: 'ic_favorites'),
+        ShortcutItem(
+            type: 'flow', localizedTitle: 'Flow'.i18n, icon: 'ic_flow'),
+      ]);
+    } catch (e) {
+      // quick_actions is not supported on all platforms (e.g. Android TV)
+      Logger.root.warning('Failed to initialize quick actions: $e');
+    }
   }
 
   void _startPreload(String type) async {
