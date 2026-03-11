@@ -142,6 +142,37 @@ adb install app-arm64-v8a-release.apk
 
 > **Tip:** Some Android TV devices require you to accept the ADB connection on-screen after running `adb connect`.
 
+## CI / CD
+
+Two GitHub Actions workflows automate APK builds:
+
+| Workflow | Trigger | What it does |
+|---|---|---|
+| **Build APK (PR)** | Every pull request | Builds debug APKs and posts a download link as a PR comment |
+| **Build & Publish Release APKs** | Release published | Builds signed release APKs and attaches them to the GitHub release |
+
+### Required repository secrets
+
+Go to **Settings → Secrets and variables → Actions** and add the following secrets:
+
+#### All workflows (API credentials)
+
+| Secret | Value |
+|---|---|
+| `DEEZER_CLIENT_ID` | Your Deezer application client ID |
+| `DEEZER_CLIENT_SECRET` | Your Deezer application client secret |
+| `LASTFM_API_KEY` | Your LastFM API key |
+| `LASTFM_API_SECRET` | Your LastFM API secret |
+
+#### Release workflow only (signing)
+
+| Secret | Value |
+|---|---|
+| `KEYSTORE_BASE64` | Base64-encoded `.jks` keystore file (`base64 -w 0 keys.jks`) |
+| `KEYSTORE_PASSWORD` | Keystore password (`storePassword`) |
+| `KEY_PASSWORD` | Key password (`keyPassword`) |
+| `KEY_ALIAS` | Key alias |
+
 ## Compile from source
 
 Install the latest flutter SDK: <https://flutter.dev/docs/get-started/install>  
@@ -159,12 +190,12 @@ Create a `.env` file in the `lib` folder of the project and add the following co
 
 ```text
 # Deezer API credentials
-deezerClientId = '<Your_Deezer_Client_Id>';
-deezerClientSecret = '<Your_Deezer_Client_Secret>';
+deezerClientId = '<Your_Deezer_Client_Id>'
+deezerClientSecret = '<Your_Deezer_Client_Secret>'
 
 # LastFM API credentials
 lastFmApiKey = '<Your_LastFM_API_Key>'
-lastFmApiSecret = 'Your_LastFM_API_Secret'
+lastFmApiSecret = '<Your_LastFM_API_Secret>'
 ```
 
 Build generated files:
