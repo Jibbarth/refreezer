@@ -406,6 +406,68 @@ class AudioPlayerHandler extends BaseAudioHandler
     return _androidAuto.getScreen(parentMediaId);
   }
 
+  // Handle voice search from Google Assistant ("Hey Google, play X on ReFreezer")
+  @override
+  Future<void> playFromSearch(String query,
+      [Map<String, dynamic>? extras]) async {
+    Logger.root.info('playFromSearch: "$query"');
+    try {
+      // Empty query means play anything (e.g. "play music on ReFreezer")
+      if (query.isEmpty) {
+        await playFromSmartTrackList(SmartTrackList(id: 'flow'));
+        return;
+      }
+
+      SearchResults results = await deezerAPI.search(query);
+
+      if (results.tracks?.isNotEmpty ?? false) {
+        // Play the matching tracks as a queue
+        final tracks = results.tracks!
+            .where((t) => t.id != null && t.id!.isNotEmpty)
+            .toList();
+        if (tracks.isEmpty) {
+          Logger.root.warning('playFromSearch: no valid track IDs found for "$query"');
+          return;
+        }
+        await playFromTrackList(
+          tracks,
+          tracks.first.id!,
+          QueueSource(
+            id: query,
+            text: 'Search: $query',
+            source: 'search',
+          ),
+        );
+      } else if (results.artists?.isNotEmpty ?? false) {
+        // Load artist top tracks and play
+        final artistId = results.artists!.first.id;
+        if (artistId == null || artistId.isEmpty) return;
+        Artist artist = await deezerAPI.artist(artistId);
+        if (artist.topTracks.isNotEmpty) {
+          final firstId = artist.topTracks.first.id;
+          if (firstId == null || firstId.isEmpty) return;
+          await playFromTopTracks(
+            artist.topTracks,
+            firstId,
+            artist,
+          );
+        }
+      } else if (results.albums?.isNotEmpty ?? false) {
+        // Load full album and play
+        final albumId = results.albums!.first.id;
+        if (albumId == null || albumId.isEmpty) return;
+        Album album = await deezerAPI.album(albumId);
+        if (album.tracks?.isNotEmpty ?? false) {
+          final firstId = album.tracks!.first.id;
+          if (firstId == null || firstId.isEmpty) return;
+          await playFromAlbum(album, firstId);
+        }
+      }
+    } catch (e, st) {
+      Logger.root.severe('Error in playFromSearch', e, st);
+    }
+  }
+
   //----------------------------------------------
   // Start internal methods native to AudioHandler
   //----------------------------------------------
