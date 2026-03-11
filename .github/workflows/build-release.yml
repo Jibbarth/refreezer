@@ -54,19 +54,7 @@ jobs:
         run: flutter pub get
 
       - name: Generate build files
-        run: |
-          # Run build_runner for each submodule that needs it (mirrors run_build_runner.ps1)
-          git config --file .gitmodules --get-regexp '\.path$' | awk '{print $2}' | while read -r subdir; do
-            if [ -f "$subdir/pubspec.yaml" ] && grep -q "build_runner" "$subdir/pubspec.yaml"; then
-              echo "==> Running build_runner in $subdir"
-              # json_serializable >=6.9 emits null-aware-elements (requires Dart >=3.8).
-              # The submodule may declare a lower minimum; bump it so the generator proceeds.
-              sed -i 's/sdk: ">=3\.0\.0 <4\.0\.0"/sdk: ">=3.8.0 <4.0.0"/' "$subdir/pubspec.yaml"
-              (cd "$subdir" && flutter pub get && dart run build_runner build --delete-conflicting-outputs)
-            fi
-          done
-          # Run build_runner for the main project
-          dart run build_runner build --delete-conflicting-outputs
+        run: ./run_build_runner.sh
 
       - name: Build release APKs (split per ABI)
         run: flutter build apk --split-per-abi --release

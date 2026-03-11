@@ -47,29 +47,17 @@ jobs:
         run: flutter pub get
 
       - name: Generate build files
-        run: |
-          # Run build_runner for each submodule that needs it (mirrors run_build_runner.ps1)
-          git config --file .gitmodules --get-regexp '\.path$' | awk '{print $2}' | while read -r subdir; do
-            if [ -f "$subdir/pubspec.yaml" ] && grep -q "build_runner" "$subdir/pubspec.yaml"; then
-              echo "==> Running build_runner in $subdir"
-              # json_serializable >=6.9 emits null-aware-elements (requires Dart >=3.8).
-              # The submodule may declare a lower minimum; bump it so the generator proceeds.
-              sed -i 's/sdk: ">=3\.0\.0 <4\.0\.0"/sdk: ">=3.8.0 <4.0.0"/' "$subdir/pubspec.yaml"
-              (cd "$subdir" && flutter pub get && dart run build_runner build --delete-conflicting-outputs)
-            fi
-          done
-          # Run build_runner for the main project
-          dart run build_runner build --delete-conflicting-outputs
+        run: ./run_build_runner.sh
 
-      - name: Build debug APKs (split per ABI)
-        run: flutter build apk --split-per-abi --debug
+      - name: Build debug APK
+        run: flutter build apk --debug
 
-      - name: Upload APK artifacts
+      - name: Upload APK artifact
         id: upload
         uses: actions/upload-artifact@v4
         with:
-          name: refreezer-debug-apks-pr${{ github.event.pull_request.number }}
-          path: build/app/outputs/flutter-apk/*.apk
+          name: refreezer-debug-apk-pr${{ github.event.pull_request.number }}
+          path: build/app/outputs/flutter-apk/app-debug.apk
           retention-days: 7
 
       - name: Post comment with artifact link
@@ -79,29 +67,21 @@ jobs:
             const artifactUrl = '${{ steps.upload.outputs.artifact-url }}';
             const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
             const body = [
-              '## 📦 Debug APKs',
+              '## 📦 Debug APK',
               '',
-              'Debug APKs have been built for this pull request and are available as workflow artifacts.',
+              'A debug APK has been built for this pull request and is available as a workflow artifact.',
               '',
-              '| Architecture | Target |',
-              '|---|---|',
-              '| `app-arm64-v8a-debug.apk` | Modern Android phones / tablets (64-bit ARM) |',
-              '| `app-armeabi-v7a-debug.apk` | Older Android phones / tablets (32-bit ARM) |',
-              '| `app-x86_64-debug.apk` | Android emulator / x86 devices |',
-              '',
-              `**[⬇️ Download APKs](${artifactUrl})**`,
+              `**[⬇️ Download APK](${artifactUrl})**`,
               '',
               `> Artifacts expire after 7 days. Built from run [#${context.runId}](${runUrl}).`,
-              '> These are **debug** builds for testing purposes only — not optimised for daily use.',
+              '> This is a **debug** build for testing purposes only — not optimised for daily use.',
               '',
               '### Install via ADB',
               '```bash',
-              '# Phone / tablet',
-              'adb install app-arm64-v8a-debug.apk',
-              '',
-              '# Android TV (over Wi-Fi)',
+              '# Connect to device (if needed)',
               'adb connect 192.168.1.100:5555',
-              'adb install app-arm64-v8a-debug.apk',
+              '# Install APK',
+              'adb install app-debug.apk',
               '```',
             ].join('\n');
 
